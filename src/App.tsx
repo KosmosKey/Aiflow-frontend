@@ -33,6 +33,7 @@ import {
   ApolloClient,
   ApolloProvider,
   InMemoryCache,
+  useMutation,
   useQuery,
 } from "@apollo/client";
 import {
@@ -45,6 +46,7 @@ import {
   StarIcon,
 } from "@chakra-ui/icons";
 import { LOAD_DATA } from "./getDataQuery";
+import { CREATE_DATA } from "./mutation";
 
 // Types for listValues
 interface typeValues {
@@ -62,6 +64,14 @@ type queryData = {
   age: string;
 };
 
+// Type for Query (Data)
+type queryData2 = {
+  name: string;
+  email: string;
+  number: number;
+  age: number;
+};
+
 // Interface for getting all data in Query
 // Array of queryData type objects
 interface getAllData {
@@ -72,7 +82,32 @@ interface getAllData {
 // Apollo Provider connecting with client...
 function App() {
   // Using a query to get data via GraphQL API
-  const { error, loading, data } = useQuery<getAllData>(LOAD_DATA);
+  const { loading, data } = useQuery<getAllData>(LOAD_DATA);
+
+  // Input Values for adding data
+  const [listValues, setListValues] = useState<typeValues>({
+    name: "",
+    email: "",
+    age: "",
+    number: "",
+  });
+
+  // Using a mutation to post a Mongo data via GraphQL API
+  const [createList, { error }] = useMutation<
+    { createList: queryData },
+    { rocket: queryData2 }
+  >(CREATE_DATA, {
+    variables: {
+      rocket: {
+        name: listValues.name,
+        email: listValues.email,
+        number: 35,
+        age: 100,
+      },
+    },
+  });
+
+  console.log("Error", error);
 
   // Search input value
   const [searchContactValue, setSearchContactValue] = useState("");
@@ -105,14 +140,6 @@ function App() {
   // useState Hook for error message
   const [errorField, setErrorField] = useState<boolean>(false);
 
-  // Input Values for adding data
-  const [listValues, setListValues] = useState<typeValues>({
-    name: "",
-    email: "",
-    age: "",
-    number: "",
-  });
-
   // Toggle Modal function
   const onToggle = () => {
     setModal(!modal);
@@ -123,8 +150,6 @@ function App() {
     (data: any) =>
       data.name.toLowerCase().indexOf(searchContactValue.toLowerCase()) !== -1
   );
-
-  console.log(filterBySearchValue);
 
   // Submitting list
   const onSubmitList = (e: React.FormEvent<HTMLFormElement>) => {
@@ -138,6 +163,7 @@ function App() {
       setErrorField(true);
     } else {
       setErrorField(false);
+      createList();
     }
   };
 
@@ -145,8 +171,6 @@ function App() {
   const onChangeListValue = (e: React.ChangeEvent<HTMLInputElement>) => {
     setListValues({ ...listValues, [e.target.name]: e.target.value });
   };
-
-  console.log(contacts);
 
   return (
     <ChakraProvider>
