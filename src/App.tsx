@@ -29,16 +29,11 @@ import {
   Tr,
 } from "@chakra-ui/react";
 import "./App.css";
-import {
-  ApolloClient,
-  ApolloProvider,
-  InMemoryCache,
-  useMutation,
-  useQuery,
-} from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import {
   AddIcon,
   CheckCircleIcon,
+  DeleteIcon,
   EmailIcon,
   PhoneIcon,
   RepeatClockIcon,
@@ -46,7 +41,7 @@ import {
   StarIcon,
 } from "@chakra-ui/icons";
 import { LOAD_DATA } from "./getDataQuery";
-import { CREATE_DATA } from "./mutation";
+import { CREATE_DATA, DELETE_DATA } from "./mutation";
 
 // Types for listValues
 interface typeValues {
@@ -61,15 +56,8 @@ type queryData = {
   id: string;
   name: string;
   email: string;
-  age: string;
-};
-
-// Type for Query (Data)
-type queryData2 = {
-  name: string;
-  email: string;
-  number: number;
-  age: number;
+  age: string | number;
+  number: string | number;
 };
 
 // Interface for getting all data in Query
@@ -93,21 +81,10 @@ function App() {
   });
 
   // Using a mutation to post a Mongo data via GraphQL API
-  const [createList, { error }] = useMutation<
-    { createList: queryData },
-    { rocket: queryData2 }
-  >(CREATE_DATA, {
-    variables: {
-      rocket: {
-        name: listValues.name,
-        email: listValues.email,
-        number: 35,
-        age: 100,
-      },
-    },
-  });
+  const [createList] = useMutation(CREATE_DATA);
 
-  console.log("Error", error);
+  // Using a mutation to DELETE a Mongo data via GraphQL API
+  const [deleteSchemaData] = useMutation(DELETE_DATA);
 
   // Search input value
   const [searchContactValue, setSearchContactValue] = useState("");
@@ -145,10 +122,12 @@ function App() {
     setModal(!modal);
   };
 
-  // Filter array by the index of search input value
+  // Filter array by the index of search input value (filter by the array name or email)
   const filterBySearchValue = contacts?.filter(
     (data: any) =>
-      data.name.toLowerCase().indexOf(searchContactValue.toLowerCase()) !== -1
+      data.name.toLowerCase().indexOf(searchContactValue.toLowerCase()) !==
+        -1 ||
+      data.email.toLowerCase().indexOf(searchContactValue.toLowerCase()) !== -1
   );
 
   // Submitting list
@@ -163,13 +142,42 @@ function App() {
       setErrorField(true);
     } else {
       setErrorField(false);
-      createList();
+      setModal(!modal);
+      createList({
+        variables: {
+          name: listValues.name,
+          email: listValues.email,
+          age: parseInt(listValues.age),
+          number: parseInt(listValues.number),
+        },
+      })
+        .then((res) => {
+          setContacts([
+            ...contacts,
+            {
+              id: res?.data?.createList.id,
+              name: res?.data?.createList.name,
+              age: res?.data?.createList.age,
+              number: res?.data?.createList?.number,
+              email: res?.data?.createList?.email,
+            },
+          ]);
+        })
+        .catch((err) => {
+          console.log(err.response);
+        });
     }
   };
 
   // onChange event for input element
   const onChangeListValue = (e: React.ChangeEvent<HTMLInputElement>) => {
     setListValues({ ...listValues, [e.target.name]: e.target.value });
+  };
+
+  // Delete Schema data
+  const deleteSchema = (id: string) => {
+    deleteSchemaData({ variables: { id } });
+    setContacts(contacts.filter((data: any) => data.id !== id));
   };
 
   return (
@@ -271,7 +279,7 @@ function App() {
           </ModalContent>
         </Modal>
 
-        <Box>
+        <Box mb="15px">
           <Flex alignItems="center">
             <h1 className="App_Title">Contact List</h1>
             <Badge ml="3" fontSize="15px">
@@ -314,6 +322,7 @@ function App() {
                 <Th>Email</Th>
                 <Th>Age</Th>
                 <Th>Number</Th>
+                <Th>Delete</Th>
               </Tr>
             </Thead>
             <Tbody>
@@ -323,6 +332,15 @@ function App() {
                   <Td>{data.email}</Td>
                   <Td>{data.age} </Td>
                   <Td>{data.number}</Td>
+                  <Td>
+                    <Box
+                      cursor="pointer"
+                      ml="10px"
+                      onClick={() => deleteSchema(data.id)}
+                    >
+                      <DeleteIcon fontSize={25} />
+                    </Box>
+                  </Td>
                 </Tr>
               ))}
             </Tbody>
