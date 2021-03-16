@@ -1,25 +1,22 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+// Importing dependencies...
+import React from "react";
+import { ChakraProvider } from "@chakra-ui/react";
+import "./App.css";
+import { ApolloClient, InMemoryCache } from "@apollo/client";
+
+// Creating a Apollo client side with the server
+const client = new ApolloClient({
+  uri: "http://localhost:5000/graphql",
+  cache: new InMemoryCache(),
+});
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ChakraProvider>
+      <div className="App">
+        <h1>Chakra ui</h1>
+      </div>
+    </ChakraProvider>
   );
 }
 
