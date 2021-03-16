@@ -1,61 +1,311 @@
 // Importing dependencies...
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
   Badge,
   Box,
   Button,
   ChakraProvider,
+  CloseButton,
   Flex,
+  FormControl,
+  FormLabel,
   Input,
   InputGroup,
   InputLeftAddon,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
+  Spinner,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
 } from "@chakra-ui/react";
 import "./App.css";
-import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
-import { AddIcon, Search2Icon } from "@chakra-ui/icons";
+import {
+  ApolloClient,
+  ApolloProvider,
+  InMemoryCache,
+  useQuery,
+} from "@apollo/client";
+import {
+  AddIcon,
+  CheckCircleIcon,
+  EmailIcon,
+  PhoneIcon,
+  RepeatClockIcon,
+  Search2Icon,
+  StarIcon,
+} from "@chakra-ui/icons";
+import { LOAD_DATA } from "./getDataQuery";
 
-// Creating a Apollo client side with the server
-const client = new ApolloClient({
-  uri: "http://localhost:5000/graphql",
-  cache: new InMemoryCache(),
-});
+// Types for listValues
+interface typeValues {
+  name: string;
+  email: string;
+  age: string;
+  number: string;
+}
+
+// Type for Query (Data)
+type queryData = {
+  id: string;
+  name: string;
+  email: string;
+  age: string;
+};
+
+// Interface for getting all data in Query
+// Array of queryData type objects
+interface getAllData {
+  getAllData: queryData[];
+}
 
 // App function component
 // Apollo Provider connecting with client...
 function App() {
-  return (
-    <ApolloProvider client={client}>
-      <ChakraProvider>
-        <div className="App">
-          <Box>
-            <Flex alignItems="center">
-              <h1 className="App_Title">Contact List</h1>
-              <Badge ml="3" fontSize="15px">
-                Salire AS
-              </Badge>
-            </Flex>
-          </Box>
+  // Using a query to get data via GraphQL API
+  const { error, loading, data } = useQuery<getAllData>(LOAD_DATA);
 
-          <Box width="full" px="50px" my="20px">
-            <Flex justifyContent="center">
-              <InputGroup size="lg">
-                <InputLeftAddon children={<Search2Icon />} />
-                <Input placeholder="Search for a contact..." />
-              </InputGroup>
-              <Button
-                size="lg"
-                leftIcon={<AddIcon />}
-                colorScheme="pink"
-                variant="solid"
-                ml="25px"
-              >
-                Add A Contact
-              </Button>
-            </Flex>
-          </Box>
-        </div>
-      </ChakraProvider>
-    </ApolloProvider>
+  // Search input value
+  const [searchContactValue, setSearchContactValue] = useState("");
+
+  // useState Loader files
+  const [loader, setLoader] = useState<boolean>(false);
+
+  // useState hook (Array of data)
+  const [contacts, setContacts] = useState<any>([]);
+
+  // useEffect to get the data from the Apollo client (GraphQL Query)
+  useEffect(() => {
+    // Set loader to true
+    setLoader(true);
+
+    // Getting data...
+    setContacts(data?.getAllData);
+  }, [data]);
+
+  useEffect(() => {
+    // If there is data set Loader to false
+    if (contacts) {
+      setLoader(false);
+    }
+  }, [data, contacts]);
+
+  // useState Hook for Modal
+  const [modal, setModal] = useState<boolean>(false);
+
+  // useState Hook for error message
+  const [errorField, setErrorField] = useState<boolean>(false);
+
+  // Input Values for adding data
+  const [listValues, setListValues] = useState<typeValues>({
+    name: "",
+    email: "",
+    age: "",
+    number: "",
+  });
+
+  // Toggle Modal function
+  const onToggle = () => {
+    setModal(!modal);
+  };
+
+  // Filter array by the index of search input value
+  const filterBySearchValue = contacts?.filter(
+    (data: any) =>
+      data.name.toLowerCase().indexOf(searchContactValue.toLowerCase()) !== -1
+  );
+
+  console.log(filterBySearchValue);
+
+  // Submitting list
+  const onSubmitList = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (
+      !listValues.name ||
+      !listValues.email ||
+      !listValues.age ||
+      !listValues.number
+    ) {
+      setErrorField(true);
+    } else {
+      setErrorField(false);
+    }
+  };
+
+  // onChange event for input element
+  const onChangeListValue = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setListValues({ ...listValues, [e.target.name]: e.target.value });
+  };
+
+  console.log(contacts);
+
+  return (
+    <ChakraProvider>
+      <div className="App" style={{ padding: "0 50px" }}>
+        <Modal onClose={onToggle} isOpen={modal}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader textAlign="center" colorScheme="pink">
+              Add a contact to your list <CheckCircleIcon ml="5px" />
+            </ModalHeader>
+            <ModalBody mb="15px">
+              <form onSubmit={onSubmitList}>
+                {errorField && (
+                  <Alert status="error" mb="20px">
+                    <AlertIcon />
+                    <AlertDescription>
+                      Please do not leave any fields empty
+                    </AlertDescription>
+                    <CloseButton position="absolute" right="8px" top="8px" />
+                  </Alert>
+                )}
+                <FormControl id="name" mb="15px">
+                  <FormLabel>Name</FormLabel>
+                  <InputGroup size="md">
+                    <InputLeftAddon children={<StarIcon />} />
+                    <Input
+                      placeholder="Name"
+                      name="name"
+                      value={listValues.name}
+                      onChange={onChangeListValue}
+                    />
+                  </InputGroup>
+                </FormControl>
+
+                <FormControl id="name" my="15px">
+                  <FormLabel>Email</FormLabel>
+                  <InputGroup size="md">
+                    <InputLeftAddon children={<EmailIcon />} />
+                    <Input
+                      placeholder="Email"
+                      name="email"
+                      value={listValues.email}
+                      onChange={onChangeListValue}
+                    />
+                  </InputGroup>
+                </FormControl>
+
+                <FormControl id="name" my="15px">
+                  <FormLabel>Age</FormLabel>
+                  <InputGroup size="md">
+                    <InputLeftAddon children={<RepeatClockIcon />} />
+                    <Input
+                      placeholder="Age"
+                      name="age"
+                      value={listValues.age}
+                      onChange={onChangeListValue}
+                    />
+                  </InputGroup>
+                </FormControl>
+
+                <FormControl id="name" my="15px">
+                  <FormLabel>Number</FormLabel>
+                  <InputGroup size="md">
+                    <InputLeftAddon children={<PhoneIcon />} />
+                    <Input
+                      placeholder="Number"
+                      name="number"
+                      value={listValues.number}
+                      onChange={onChangeListValue}
+                    />
+                  </InputGroup>
+                </FormControl>
+
+                <Box w="full" mt="25px">
+                  <Flex>
+                    <Button
+                      mr="10px"
+                      w="full"
+                      colorScheme="teal"
+                      variant="solid"
+                      type="submit"
+                    >
+                      Create Contact
+                    </Button>
+                    <Button
+                      ml="10px"
+                      w="full"
+                      colorScheme="teal"
+                      variant="outline"
+                      onClick={onToggle}
+                    >
+                      Cancel
+                    </Button>
+                  </Flex>
+                </Box>
+              </form>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+
+        <Box>
+          <Flex alignItems="center">
+            <h1 className="App_Title">Contact List</h1>
+            <Badge ml="3" fontSize="15px">
+              Salire AS
+            </Badge>
+          </Flex>
+        </Box>
+
+        <Box width="full">
+          <Flex justifyContent="center">
+            <InputGroup size="lg">
+              <InputLeftAddon children={<Search2Icon />} />
+              <Input
+                placeholder="Search for a contact..."
+                value={searchContactValue}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setSearchContactValue(e.target.value)
+                }
+              />
+            </InputGroup>
+            <Button
+              size="lg"
+              leftIcon={<AddIcon />}
+              colorScheme="pink"
+              variant="solid"
+              ml="25px"
+              onClick={onToggle}
+            >
+              Add A Contact
+            </Button>
+          </Flex>
+        </Box>
+        {loading || loader ? (
+          <Spinner size="xl" thickness="10px" color="blue.300" my={10} />
+        ) : (
+          <Table variant="striped" mt="30" colorScheme="blue">
+            <Thead>
+              <Tr>
+                <Th>Name</Th>
+                <Th>Email</Th>
+                <Th>Age</Th>
+                <Th>Number</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {filterBySearchValue?.map((data: any) => (
+                <Tr key={data.id}>
+                  <Td fontWeight="bold">{data.name}</Td>
+                  <Td>{data.email}</Td>
+                  <Td>{data.age} </Td>
+                  <Td>{data.number}</Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        )}
+      </div>
+    </ChakraProvider>
   );
 }
 
